@@ -12,6 +12,11 @@ type BoltDB struct {
 	db *bolt.DB
 }
 
+type Response struct {
+	Key   string
+	Value string
+}
+
 //OpenDB set up the database.
 func OpenDB() (boltDB *BoltDB, err error) {
 	// Open the my.db data file in your current directory.
@@ -35,22 +40,27 @@ func InitDB(boltDB *BoltDB) {
 	})
 }
 
-func WriteSomethingToDB(boltDB *BoltDB, key string) error {
-	var err error
-	boltDB.db.Update(func(tx *bolt.Tx) error {
+func WriteSomethingToDB(boltDB *BoltDB, key string, value string) *Response {
+	status := boltDB.db.Update(func(tx *bolt.Tx) error {
 		b := tx.Bucket([]byte("MyBucket"))
-		err = b.Put([]byte("answer"), []byte("42"))
-		return nil
+		err := b.Put([]byte("answer"), []byte("42"))
+		return err
 	})
-	return err
+	if status == nil {
+		return &Response{key, value}
+	} else {
+
+		return &Response{key, "error"}
+	}
 }
 
-func RetrieveSomethingFromDB(boltDB *BoltDB, key string) string {
-	var value []byte
+func RetrieveSomethingFromDB(boltDB *BoltDB, key string) *Response {
+	var value string
 	boltDB.db.View(func(tx *bolt.Tx) error {
 		b := tx.Bucket([]byte("MyBucket"))
-		value = b.Get([]byte("answer"))
+		v := b.Get([]byte("answer"))
+		value = string(v)
 		return nil
 	})
-	return string(value)
+	return &Response{key, value}
 }

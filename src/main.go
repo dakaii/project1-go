@@ -11,12 +11,9 @@ import (
 
 func main() {
 	// Open the my.db data file in your current directory.
-	// It will be created if it doesn't exist.
-	//boltDB = database.BoltDB
+	// It will be created if it already doesn't exist.
 	boltDB, _ := database.OpenDB()
 	database.InitDB(boltDB)
-	//database.WriteSomethingToDB(boltDB)
-	//database.RetrieveSomethingFromDB(boltDB)
 	router := gin.Default()
 
 	router.GET("/", func(c *gin.Context) {
@@ -28,18 +25,17 @@ func main() {
 		c.String(http.StatusOK, "Hello %s", param)
 	})
 
-	router.POST("/save/:arg", func(c *gin.Context) {
-		key := c.Param("arg")
-		value := database.WriteSomethingToDB(boltDB, key)
-		if value != nil {
+	router.POST("/save/:key/:value", func(c *gin.Context) {
+		key := c.Param("key")
+		value := c.Param("value")
+		var response *database.Response
+		response = database.WriteSomethingToDB(boltDB, key, value)
+		if response.Value == "error" {
 			c.JSON(http.StatusInternalServerError, gin.H{
-				"key":   key,
-				"error": value,
+				"error": "error",
 			})
 		} else {
-			c.JSON(http.StatusOK, gin.H{
-				"key": key,
-			})
+			c.JSON(http.StatusOK, response)
 		}
 	})
 
@@ -51,13 +47,6 @@ func main() {
 			"value": value,
 		})
 	})
-
-	// Simple group: v1
-	//cache := router.Group("/cache")
-	//{
-	//cache.POST("/login", database.##)
-	//cache.GET("/get", database.@@)
-	//}
 
 	s := &http.Server{
 		Addr:           ":8080",
